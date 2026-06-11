@@ -234,7 +234,7 @@ main{max-width:780px;margin:0 auto;padding:16px 16px 90px}
       <button class="chip" id="tab-request" onclick="setLoginMode('request')">利用申請</button>
     </div>
     <div class="field"><label>名前</label>
-      <input id="lg-name" placeholder="例）小関" autocomplete="username"></div>
+      <input id="lg-name" autocomplete="username"></div>
     <div class="field"><label>パスワード</label>
       <input id="lg-pass" type="password" autocomplete="current-password"
         onkeydown="if(event.key==='Enter')submitLogin()"></div>
@@ -592,14 +592,14 @@ function openCustomerForm(id){
   const c = id ? DB.customers.find(x=>x.id===id) : null;
   showSheet(`
     <h3>${c?'基本情報を編集':'新規顧客の登録'}</h3>
-    <div class="field"><label>お名前 *</label><input id="f-name" value="${esc(c?.name)}" placeholder="例）山田 花子"></div>
-    <div class="field"><label>フリガナ</label><input id="f-kana" value="${esc(c?.kana)}" placeholder="ヤマダ ハナコ"></div>
+    <div class="field"><label>お名前 *</label><input id="f-name" value="${esc(c?.name)}"></div>
+    <div class="field"><label>フリガナ</label><input id="f-kana" value="${esc(c?.kana)}"></div>
     <div class="row2">
       <div class="field"><label>電話番号</label><input id="f-phone" inputmode="tel" value="${esc(c?.phone)}"></div>
       <div class="field"><label>生年月日</label><input id="f-birthday" type="date" value="${c?.birthday||''}"></div>
     </div>
     <div class="field"><label>アレルギー・注意事項（パッチテスト歴、皮膚の状態など）</label>
-      <textarea id="f-allergy" placeholder="例）グルーで赤み出やすい。2025/10 パッチテスト陰性。">${esc(c?.allergy)}</textarea></div>
+      <textarea id="f-allergy">${esc(c?.allergy)}</textarea></div>
     <div class="field"><label>メモ（好み・会話内容など）</label><textarea id="f-note">${esc(c?.note)}</textarea></div>
     <div class="sheet-actions">
       <button class="btn ghost" onclick="closeSheet()">キャンセル</button>
@@ -665,7 +665,7 @@ async function openRecordForm(customerId, recordId){
   showSheet(`
     <h3>${r?'カルテを編集':'新規カルテ'} — ${esc(c.name)} 様</h3>
     <div class="field"><label>施術日 *</label><input id="r-date" type="date" value="${r?.date||today}"></div>
-    <div class="field"><label>メニュー *</label><input id="r-menu" value="${esc(r?.menu)}" placeholder="例）フラットラッシュ120本"></div>
+    <div class="field"><label>メニュー *</label><input id="r-menu" value="${esc(r?.menu)}"></div>
     <div class="field"><label>料金（税込・円）</label><input id="r-price" inputmode="numeric" value="${r?.price||''}"></div>
 
     <div class="dept-section">
@@ -673,11 +673,11 @@ async function openRecordForm(customerId, recordId){
       <div class="row3">
         <div class="field"><label>カール</label>
           <select id="r-curl">${['','J','C','CC','D','L'].map(v=>`<option ${r?.curl===v?'selected':''}>${v}</option>`).join('')}</select></div>
-        <div class="field"><label>太さ(mm)</label><input id="r-thickness" value="${esc(r?.thickness)}" placeholder="0.15"></div>
-        <div class="field"><label>長さ(mm)</label><input id="r-length" value="${esc(r?.length)}" placeholder="9-11"></div>
+        <div class="field"><label>太さ(mm)</label><input id="r-thickness" value="${esc(r?.thickness)}"></div>
+        <div class="field"><label>長さ(mm)</label><input id="r-length" value="${esc(r?.length)}"></div>
       </div>
       <div class="row2">
-        <div class="field"><label>本数・デザイン</label><input id="r-count" value="${esc(r?.count)}" placeholder="120本 / フラット"></div>
+        <div class="field"><label>本数・デザイン</label><input id="r-count" value="${esc(r?.count)}"></div>
         <div class="field"><label>使用グルー</label><input id="r-glue" value="${esc(r?.glue)}"></div>
       </div>
       <div class="field"><label>パッチテスト</label>
@@ -704,7 +704,7 @@ async function openRecordForm(customerId, recordId){
     </div>
     <div class="field"><label>施術詳細・仕上がりメモ</label><textarea id="r-detail">${esc(r?.detail)}</textarea></div>
     <div class="field"><label>次回提案（次回予約につながる一言）</label>
-      <input id="r-next" value="${esc(r?.next)}" placeholder="例）3週間後にリペア"></div>
+      <input id="r-next" value="${esc(r?.next)}"></div>
     <div class="field"><label>スタッフ間共有メモ</label><textarea id="r-memo">${esc(r?.memo)}</textarea></div>
     <div class="sheet-actions">
       <button class="btn ghost" onclick="closeSheet()">キャンセル</button>
