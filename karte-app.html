@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アイラッシュカルテ</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F6F3;
+  --paper:#FFFFFF;
+  --ink:#23211E;
+  --sub:#7A756D;
+  --line:#E4E1DA;
+  --lash:#7A4A66;
+  --lash-soft:#F2E7EE;
+  --danger:#B4452F;
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:"Zen Kaku Gothic New",sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.6;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;font-size:inherit}
+input,select,textarea{
+  font-family:inherit;font-size:15px;color:var(--ink);
+  width:100%;padding:10px 12px;
+  border:1px solid var(--line);border-radius:10px;background:#fff;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);outline-offset:-1px}
+textarea{resize:vertical;min-height:72px}
+label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:4px;letter-spacing:.05em}
+.field{margin-bottom:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* ===== header ===== */
+header{
+  background:var(--paper);border-bottom:1px solid var(--line);
+  padding:14px 16px;position:sticky;top:0;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.brand{font-family:"Shippori Mincho",serif;font-size:18px;font-weight:700;letter-spacing:.06em}
+.brand small{display:block;font-family:"Zen Kaku Gothic New";font-size:10px;font-weight:500;color:var(--sub);letter-spacing:.22em}
+.mode{font-size:10px;color:var(--sub);display:flex;align-items:center;gap:4px;margin-top:2px}
+.mode .dot{width:7px;height:7px;border-radius:50%;background:#B9B3A8}
+.mode.ok .dot{background:#3D8B6B}
+.mode.err .dot{background:var(--danger)}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 16px;border-radius:999px;font-weight:700;font-size:14px;
+  background:var(--ink);color:#fff;transition:opacity .15s;
+}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.lash{background:var(--lash)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn.sm{padding:6px 12px;font-size:12px}
+
+/* ===== layout ===== */
+main{max-width:780px;margin:0 auto;padding:16px 16px 90px}
+.searchbar{display:flex;gap:8px;margin-bottom:16px}
+.searchbar input{flex:1}
+.chip{
+  padding:6px 14px;border-radius:999px;border:1px solid var(--line);
+  background:#fff;font-size:13px;font-weight:500;color:var(--sub);
+}
+.chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ===== customer card ===== */
+.card{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:10px;cursor:pointer;transition:transform .12s, box-shadow .12s;
+}
+.card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.06)}
+.card .name{font-weight:700;font-size:16px}
+.card .kana{font-size:11px;color:var(--sub);letter-spacing:.1em}
+.card .meta{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--sub);flex-wrap:wrap}
+.alert-dot{color:var(--danger);font-weight:700;font-size:12px}
+.empty{
+  text-align:center;color:var(--sub);padding:60px 20px;
+  border:1.5px dashed var(--line);border-radius:var(--radius);background:#fff;
+}
+.empty .big{font-family:"Shippori Mincho",serif;font-size:17px;color:var(--ink);margin-bottom:6px}
+.loading{text-align:center;color:var(--sub);padding:60px 20px;font-size:14px}
+
+/* ===== detail ===== */
+.back{font-size:13px;color:var(--sub);margin-bottom:12px;display:inline-flex;align-items:center;gap:4px}
+.profile{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px;margin-bottom:16px;
+}
+.profile h2{font-family:"Shippori Mincho",serif;font-size:22px}
+.profile .kana{font-size:12px;color:var(--sub);letter-spacing:.12em}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:14px;font-size:13px}
+.pgrid dt{font-size:11px;font-weight:700;color:var(--sub)}
+.pgrid dd{margin:0}
+.allergy{
+  margin-top:14px;background:#FBEFEC;border:1px solid #EFD2CA;border-radius:10px;
+  padding:10px 12px;font-size:13px;color:var(--danger);
+}
+.allergy strong{display:block;font-size:11px;letter-spacing:.08em}
+.profile-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+
+/* ===== records timeline ===== */
+.sec-title{
+  font-family:"Shippori Mincho",serif;font-size:15px;font-weight:700;
+  margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between;
+}
+.record{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:10px;overflow:hidden;
+}
+.record .head{
+  display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;
+  border-left:4px solid var(--lash);
+}
+.record .date{font-weight:700;font-size:14px;white-space:nowrap}
+.record .menu{flex:1;font-size:13px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.record .body{display:none;padding:4px 16px 16px;border-top:1px dashed var(--line)}
+.record.open .body{display:block}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:6px 12px;font-size:13px;margin-top:10px}
+.kv dt{font-weight:700;color:var(--sub);font-size:12px}
+.kv dd{white-space:pre-wrap}
+.rec-actions{margin-top:12px;display:flex;gap:8px}
+.skholder{
+  margin-top:12px;font-size:12px;color:var(--sub);
+  border:1px dashed var(--line);border-radius:10px;padding:14px;text-align:center;
+}
+.skholder img.sketch{width:100%;border-radius:6px;background:#fff;display:block}
+.skholder.done{border-style:solid;padding:0;overflow:hidden}
+
+/* ===== modal ===== */
+.overlay{
+  position:fixed;inset:0;background:rgba(35,33,30,.45);z-index:30;
+  display:none;align-items:flex-end;justify-content:center;
+}
+.overlay.show{display:flex}
+.sheet{
+  background:var(--paper);width:100%;max-width:680px;max-height:92vh;overflow-y:auto;
+  border-radius:18px 18px 0 0;padding:20px 20px 32px;
+}
+@media(min-width:700px){
+  .overlay{align-items:center}
+  .sheet{border-radius:18px;max-height:86vh}
+}
+.sheet h3{font-family:"Shippori Mincho",serif;font-size:18px;margin-bottom:16px}
+.sheet-actions{display:flex;gap:10px;margin-top:20px}
+.sheet-actions .btn{flex:1;justify-content:center}
+
+/* ===== dept section ===== */
+.dept-section{border-top:1px dashed var(--line);padding-top:14px;margin-top:6px}
+.dept-section .tag{
+  font-size:11px;font-weight:700;letter-spacing:.1em;margin-bottom:10px;
+  display:inline-block;padding:2px 10px;border-radius:999px;
+  background:var(--lash-soft);color:var(--lash);
+}
+
+/* ===== sketch ===== */
+.sketch-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.sketch-stack{position:relative;background:#fff}
+.sketch-stack canvas{display:block;width:100%}
+#r-guide{position:absolute;top:0;left:0;height:100%;pointer-events:none}
+#r-sketch{position:relative;touch-action:none;cursor:crosshair;background:transparent}
+.sketch-tools{display:flex;gap:8px;padding:8px 10px;border-top:1px dashed var(--line);background:#FAFAF8;flex-wrap:wrap}
+.sketch-tools .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ===== login ===== */
+.login{
+  position:fixed;inset:0;background:var(--bg);z-index:40;
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.login.show{display:flex}
+.login-box{
+  background:var(--paper);border:1px solid var(--line);border-radius:18px;
+  padding:32px 28px;width:100%;max-width:380px;text-align:center;
+}
+.login-box .brand{margin-bottom:20px}
+.login-box label{text-align:left}
+.login-box .btn{width:100%;justify-content:center;margin-top:14px}
+.login-err{font-size:12px;color:var(--danger);margin-top:10px;min-height:18px}
+.login-note{font-size:11px;color:var(--sub);margin-top:8px}
+.login-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:18px}
+
+/* ===== userbar / admin ===== */
+.userbar{display:flex;gap:10px;align-items:center;margin-top:2px;font-size:11px;color:var(--sub)}
+.userbar button{font-size:11px;color:var(--sub);text-decoration:underline;padding:0}
+.user-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px dashed var(--line)}
+.user-row .uname{flex:1;font-weight:700}
+.status-badge{font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px}
+.status-badge.pending{background:#FBF3E2;color:#9A6B16}
+.status-badge.approved{background:#E4EFEC;color:#2F6B5E}
+.status-badge.revoked{background:#F4E3DF;color:var(--danger)}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--ink);color:#fff;padding:10px 22px;border-radius:999px;
+  font-size:13px;font-weight:700;z-index:50;opacity:0;transition:all .25s;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">アイラッシュカルテ<small>EYELASH RECORD</small></div>
+    <div class="mode" id="mode"><span class="dot"></span><span id="mode-text">端末内モード</span></div>
+    <div class="userbar" id="userbar" style="display:none">
+      <span id="user-name"></span>
+      <button id="admin-btn" style="display:none" onclick="openAdminPanel()">スタッフ管理</button>
+      <button onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+  <button class="btn" onclick="openCustomerForm()">＋ 新規顧客</button>
+</header>
+
+<main id="main"><div class="loading">読み込み中…</div></main>
+
+<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<div class="login" id="login">
+  <div class="login-box">
+    <div class="brand">アイラッシュカルテ<small>EYELASH RECORD</small></div>
+    <div class="login-tabs">
+      <button class="chip active" id="tab-login" onclick="setLoginMode('login')">ログイン</button>
+      <button class="chip" id="tab-request" onclick="setLoginMode('request')">利用申請</button>
+    </div>
+    <div class="field"><label>名前</label>
+      <input id="lg-name" placeholder="例）小関" autocomplete="username"></div>
+    <div class="field"><label>パスワード</label>
+      <input id="lg-pass" type="password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')submitLogin()"></div>
+    <div class="field" id="lg-pass2-wrap" style="display:none"><label>パスワード（確認）</label>
+      <input id="lg-pass2" type="password" onkeydown="if(event.key==='Enter')submitLogin()"></div>
+    <button class="btn lash" id="lg-btn" onclick="submitLogin()">ログイン</button>
+    <p class="login-err" id="login-err"></p>
+    <p class="login-note">利用申請後、管理者の承認が完了するとログインできます。</p>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   設定：GASをデプロイしたら、下のURLを書き換えてください。
+   空のままだと「端末内モード」（このブラウザだけに保存）で動きます。
+   ========================================================= */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwkSOcbVwy-FyQ1Q7wSHL3-36OrmY9zltRe2TaUX8DmoBzHjomfeumnXaiwmJSrohiq/exec';
+
+const LOCAL_MODE = !GAS_URL.startsWith('https://');
+let TOKEN = '';
+let USER = null;
+
+/* ================= local storage (端末内モード用) ================= */
+const mem = {};
+const KEY = 'salon-karte-v1';
+const store = {
+  async load(){
+    try{
+      if(window.storage){ const r = await window.storage.get(KEY); return r ? JSON.parse(r.value) : null; }
+    }catch(e){}
+    try{ const v = localStorage.getItem(KEY); if(v) return JSON.parse(v); }catch(e){}
+    return mem[KEY] || null;
+  },
+  async save(data){
+    const v = JSON.stringify(data);
+    mem[KEY] = data;
+    try{ if(window.storage){ await window.storage.set(KEY, v); return; } }catch(e){}
+    try{ localStorage.setItem(KEY, v); }catch(e){}
+  }
+};
+
+/* ================= server api (共有モード用) ================= */
+async function api(action, payload = {}){
+  let res;
+  try{
+    res = await fetch(GAS_URL, {
+      method:'POST',
+      body: JSON.stringify(Object.assign({action, token: TOKEN}, payload)),
+    });
+  }catch(e){ throw new Error('通信できません。電波状況とGAS_URLを確認してください'); }
+  let j;
+  try{ j = await res.json(); }catch(e){ throw new Error('サーバー応答が不正です。GASのデプロイ設定を確認してください'); }
+  if(!j.ok){
+    const err = new Error(j.error || 'サーバーエラー');
+    err.auth = !!j.authError;
+    throw err;
+  }
+  return j;
+}
+function handleAuthErr(e){
+  if(!e.auth) return false;
+  TOKEN = ''; USER = null;
+  localStorage.removeItem('karte-token');
+  localStorage.removeItem('karte-user');
+  updateUserbar();
+  showLogin(e.message);
+  return true;
+}
+
+/* ================= state ================= */
+let DB = { customers: [] };
+let view = { page:'list', customerId:null, search:'' };
+const sketchCache = {};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => (s??'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = d => { if(!d) return '-'; const [y,m,dd]=String(d).split('-'); return dd?`${y}.${m}.${dd}`:d; };
+
+function setMode(state, text){
+  const m = document.getElementById('mode');
+  m.className = 'mode ' + state;
+  document.getElementById('mode-text').textContent = text;
+}
+
+async function init(){
+  if(LOCAL_MODE){
+    setMode('', '端末内モード（共有なし）');
+    const saved = await store.load();
+    if(saved) DB = Object.assign(DB, saved);
+    render();
+    return;
+  }
+  TOKEN = localStorage.getItem('karte-token') || '';
+  try{ USER = JSON.parse(localStorage.getItem('karte-user') || 'null'); }catch(e){ USER = null; }
+  updateUserbar();
+  if(!TOKEN){ showLogin(); return; }
+  try{ await loadAll(); }
+  catch(e){
+    if(handleAuthErr(e)) return;
+    setMode('err','接続エラー');
+    document.getElementById('main').innerHTML = `<div class="empty"><div class="big">読み込めませんでした</div>${esc(e.message)}<br><br><button class="btn ghost sm" onclick="init()">再読み込み</button></div>`;
+  }
+}
+function updateUserbar(){
+  const bar = document.getElementById('userbar');
+  if(LOCAL_MODE || !USER){ bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('user-name').textContent = USER.name;
+  document.getElementById('admin-btn').style.display = USER.role==='admin' ? 'inline' : 'none';
+}
+async function loadAll(){
+  setMode('', '同期中…');
+  const j = await api('list');
+  DB.customers = j.customers || [];
+  setMode('ok', '共有モード（同期済み）');
+  document.getElementById('login').classList.remove('show');
+  updateUserbar();
+  render();
+}
+async function persistLocal(){ if(LOCAL_MODE) await store.save(DB); }
+
+/* ================= login / account ================= */
+let loginMode = 'login';
+function showLogin(msg){
+  document.getElementById('login').classList.add('show');
+  document.getElementById('login-err').textContent = msg || '';
+}
+function setLoginMode(mode){
+  loginMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode==='login');
+  document.getElementById('tab-request').classList.toggle('active', mode==='request');
+  document.getElementById('lg-pass2-wrap').style.display = mode==='request' ? 'block' : 'none';
+  document.getElementById('lg-btn').textContent = mode==='request' ? '利用を申請する' : 'ログイン';
+  document.getElementById('login-err').textContent = '';
+}
+async function submitLogin(){
+  const errEl = document.getElementById('login-err');
+  const btn = document.getElementById('lg-btn');
+  const name = document.getElementById('lg-name').value.trim();
+  const pass = document.getElementById('lg-pass').value;
+  if(!name || !pass){ errEl.textContent = '名前とパスワードを入力してください'; return; }
+  if(loginMode==='request'){
+    if(pass.length < 4){ errEl.textContent = 'パスワードは4文字以上にしてください'; return; }
+    if(pass !== document.getElementById('lg-pass2').value){ errEl.textContent = 'パスワード（確認）が一致しません'; return; }
+  }
+  btn.disabled = true; btn.textContent = '通信中…';
+  try{
+    if(loginMode==='request'){
+      await api('requestAccount', {name, pass});
+      setLoginMode('login');
+      errEl.textContent = '申請しました。管理者の承認をお待ちください。';
+    }else{
+      const j = await api('login', {name, pass});
+      TOKEN = j.token; USER = j.user;
+      localStorage.setItem('karte-token', TOKEN);
+      localStorage.setItem('karte-user', JSON.stringify(USER));
+      await loadAll();
+    }
+  }catch(e){
+    errEl.textContent = e.message;
+  }finally{
+    btn.disabled = false;
+    btn.textContent = loginMode==='request' ? '利用を申請する' : 'ログイン';
+  }
+}
+async function logout(){
+  try{ if(TOKEN) await api('logout'); }catch(e){}
+  TOKEN = ''; USER = null;
+  localStorage.removeItem('karte-token');
+  localStorage.removeItem('karte-user');
+  updateUserbar();
+  document.getElementById('lg-pass').value = '';
+  showLogin('ログアウトしました');
+}
+
+/* ================= admin: スタッフ管理 ================= */
+async function openAdminPanel(){
+  showSheet(`<h3>スタッフ管理</h3><div class="loading">読み込み中…</div>`);
+  try{
+    const j = await api('listUsers');
+    renderAdminPanel(j.users);
+  }catch(e){
+    if(handleAuthErr(e)){ closeSheet(); return; }
+    showSheet(`<h3>スタッフ管理</h3><p>${esc(e.message)}</p>
+      <div class="sheet-actions"><button class="btn ghost" onclick="closeSheet()">閉じる</button></div>`);
+  }
+}
+function renderAdminPanel(users){
+  const label = {pending:'承認待ち', approved:'利用中', revoked:'停止中'};
+  const rows = users.map(u=>{
+    const actions =
+      u.role==='admin' ? '<span style="font-size:11px;color:var(--sub)">管理者</span>' :
+      u.status==='pending'  ? `<button class="btn lash sm" onclick="setUserStatus('${u.id}','approved')">承認</button>
+                               <button class="btn danger sm" onclick="setUserStatus('${u.id}','revoked')">却下</button>` :
+      u.status==='approved' ? `<button class="btn danger sm" onclick="setUserStatus('${u.id}','revoked')">停止</button>` :
+                              `<button class="btn ghost sm" onclick="setUserStatus('${u.id}','approved')">再開</button>`;
+    return `<div class="user-row">
+      <span class="uname">${esc(u.name)}</span>
+      <span class="status-badge ${u.status}">${label[u.status]||u.status}</span>
+      ${actions}
+    </div>`;
+  }).join('');
+  showSheet(`<h3>スタッフ管理</h3>
+    ${rows || '<p style="color:var(--sub);font-size:13px">申請はまだありません。</p>'}
+    <p style="font-size:11px;color:var(--sub);margin-top:14px">「停止」にすると、そのスタッフは即時ログアウトされ、再開するまでアクセスできません。</p>
+    <div class="sheet-actions"><button class="btn ghost" onclick="closeSheet()">閉じる</button></div>`);
+}
+async function setUserStatus(id, status){
+  try{
+    await api('setUserStatus', {id, status});
+    toast(status==='approved' ? '承認しました' : '停止しました');
+    openAdminPanel();
+  }catch(e){
+    if(!handleAuthErr(e)) toast(e.message);
+  }
+}
+
+/* ================= render ================= */
+function render(){
+  const m = document.getElementById('main');
+  m.innerHTML = view.page==='detail' ? renderDetail() : renderList();
+}
+
+function renderList(){
+  const q = view.search.trim();
+  let list = DB.customers.slice().sort((a,b)=>(lastVisit(b)||'').localeCompare(lastVisit(a)||''));
+  if(q) list = list.filter(c => (c.name+c.kana+(c.phone||'')).includes(q));
+
+  const cards = list.map(c=>{
+    return `<div class="card" onclick="openDetail('${c.id}')">
+      <div class="kana">${esc(c.kana)}</div>
+      <div class="name">${esc(c.name)} 様 ${c.allergy?'<span class="alert-dot">⚠ 注意事項あり</span>':''}</div>
+      <div class="meta">
+        <span>最終来店 ${fmtDate(lastVisit(c))}</span>
+        <span>来店 ${c.records.length}回</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="searchbar">
+      <input placeholder="名前・フリガナ・電話番号で検索" value="${esc(view.search)}"
+        oninput="view.search=this.value;renderListOnly(this)">
+    </div>
+    ${cards || `<div class="empty"><div class="big">カルテはまだありません</div>右上の「＋ 新規顧客」から登録を始めてください</div>`}
+  `;
+}
+function renderListOnly(input){
+  const pos = input.selectionStart;
+  render();
+  const el = document.querySelector('.searchbar input');
+  el.focus(); el.setSelectionRange(pos,pos);
+}
+function lastVisit(c){ return c.records.map(r=>r.date).sort().pop() || (c.createdAt||'').slice(0,10); }
+
+function renderDetail(){
+  const c = DB.customers.find(x=>x.id===view.customerId);
+  if(!c){ view.page='list'; return renderList(); }
+  const recs = c.records.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  return `
+    <button class="back" onclick="view.page='list';render()">← 顧客一覧へ戻る</button>
+    <div class="profile">
+      <div class="kana">${esc(c.kana)}</div>
+      <h2>${esc(c.name)} 様</h2>
+      <dl class="pgrid">
+        <div><dt>電話番号</dt><dd>${esc(c.phone)||'-'}</dd></div>
+        <div><dt>生年月日</dt><dd>${c.birthday?fmtDate(c.birthday):'-'}</dd></div>
+        <div><dt>初回登録</dt><dd>${fmtDate((c.createdAt||'').slice(0,10))}</dd></div>
+        <div><dt>来店回数</dt><dd>${c.records.length}回</dd></div>
+      </dl>
+      ${c.allergy?`<div class="allergy"><strong>アレルギー・注意事項</strong>${esc(c.allergy)}</div>`:''}
+      ${c.note?`<div class="kv" style="margin-top:12px"><dt>メモ</dt><dd>${esc(c.note)}</dd></div>`:''}
+      <div class="profile-actions">
+        <button class="btn lash sm" onclick="openRecordForm('${c.id}')">＋ 新規カルテ</button>
+        <button class="btn ghost sm" onclick="openCustomerForm('${c.id}')">基本情報を編集</button>
+        <button class="btn danger sm" data-label="顧客を削除" onclick="if(armed(this))deleteCustomer('${c.id}')">顧客を削除</button>
+      </div>
+    </div>
+    <div class="sec-title">施術履歴（${recs.length}件）</div>
+    ${recs.map(r=>renderRecord(c,r)).join('') || `<div class="empty">施術履歴はまだありません。<br>上のボタンからカルテを追加してください。</div>`}
+  `;
+}
+
+function renderRecord(c,r){
+  const spec = [r.curl&&`カール:${r.curl}`, r.thickness&&`太さ:${r.thickness}`, r.length&&`長さ:${r.length}`, r.count&&`本数:${r.count}`].filter(Boolean).join(' ／ ');
+  const hasSketch = !!(r.sketchId || r.sketchInk || r.sketch);
+  return `<div class="record" id="rec-${r.id}">
+    <div class="head" onclick="toggleRecord('${c.id}','${r.id}')">
+      <span class="date">${fmtDate(r.date)}</span>
+      <span class="menu">${esc(r.menu)}</span>
+    </div>
+    <div class="body">
+      <dl class="kv">
+        <dt>メニュー</dt><dd>${esc(r.menu)||'-'}</dd>
+        ${r.price?`<dt>料金</dt><dd>¥${Number(r.price).toLocaleString()}</dd>`:''}
+        ${spec?`<dt>デザイン</dt><dd>${esc(spec)}</dd>`:''}
+        ${r.glue?`<dt>グルー</dt><dd>${esc(r.glue)}</dd>`:''}
+        <dt>パッチテスト</dt><dd>${r.patch==='done'?'実施済み':r.patch==='skip'?'未実施（同意取得）':'-'}</dd>
+        ${r.detail?`<dt>施術詳細</dt><dd>${esc(r.detail)}</dd>`:''}
+        ${r.next?`<dt>次回提案</dt><dd>${esc(r.next)}</dd>`:''}
+        ${r.memo?`<dt>共有メモ</dt><dd>${esc(r.memo)}</dd>`:''}
+        ${r.staff?`<dt>記録者</dt><dd>${esc(r.staff)}</dd>`:''}
+      </dl>
+      ${hasSketch?`<div class="skholder" id="skimg-${r.id}">手書きメモ</div>`:''}
+      <div class="rec-actions">
+        <button class="btn ghost sm" onclick="openRecordForm('${c.id}','${r.id}')">編集</button>
+        <button class="btn danger sm" data-label="削除" onclick="if(armed(this))deleteRecord('${c.id}','${r.id}')">削除</button>
+      </div>
+    </div>
+  </div>`;
+}
+function toggleRecord(cid, rid){
+  const el = document.getElementById('rec-'+rid);
+  el.classList.toggle('open');
+  if(!el.classList.contains('open')) return;
+  const c = DB.customers.find(x=>x.id===cid);
+  const r = c && c.records.find(x=>x.id===rid);
+  if(r && (r.sketchId || r.sketchInk || r.sketch)) ensureSketchImg(r);
+}
+async function ensureSketchImg(r){
+  const holder = document.getElementById('skimg-'+r.id);
+  if(!holder || holder.dataset.done) return;
+  let ink = r.sketchInk || r.sketch || sketchCache[r.sketchId];
+  if(!ink && r.sketchId){
+    holder.textContent = '手書きメモを読み込み中…';
+    try{
+      const j = await api('getSketch', {id: r.sketchId});
+      ink = 'data:image/png;base64,' + j.data;
+      sketchCache[r.sketchId] = ink;
+    }catch(e){ holder.textContent = '手書きメモを読み込めませんでした'; return; }
+  }
+  if(!ink){ holder.remove(); return; }
+  const url = await compositeSketch(ink, r.sketchGuide);
+  holder.innerHTML = `<img class="sketch" src="${url}" alt="手書きメモ">`;
+  holder.classList.add('done');
+  holder.dataset.done = '1';
+}
+function compositeSketch(ink, guide){
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const c = document.createElement('canvas'); c.width = 680; c.height = 380;
+      const x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0,0,680,380);
+      if(guide) drawGuide(x,680,380);
+      x.drawImage(img,0,0,680,380);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror = ()=>resolve('');
+    img.src = ink;
+  });
+}
+
+/* ================= customer form ================= */
+function openCustomerForm(id){
+  const c = id ? DB.customers.find(x=>x.id===id) : null;
+  showSheet(`
+    <h3>${c?'基本情報を編集':'新規顧客の登録'}</h3>
+    <div class="field"><label>お名前 *</label><input id="f-name" value="${esc(c?.name)}" placeholder="例）山田 花子"></div>
+    <div class="field"><label>フリガナ</label><input id="f-kana" value="${esc(c?.kana)}" placeholder="ヤマダ ハナコ"></div>
+    <div class="row2">
+      <div class="field"><label>電話番号</label><input id="f-phone" inputmode="tel" value="${esc(c?.phone)}"></div>
+      <div class="field"><label>生年月日</label><input id="f-birthday" type="date" value="${c?.birthday||''}"></div>
+    </div>
+    <div class="field"><label>アレルギー・注意事項（パッチテスト歴、皮膚の状態など）</label>
+      <textarea id="f-allergy" placeholder="例）グルーで赤み出やすい。2025/10 パッチテスト陰性。">${esc(c?.allergy)}</textarea></div>
+    <div class="field"><label>メモ（好み・会話内容など）</label><textarea id="f-note">${esc(c?.note)}</textarea></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" onclick="closeSheet()">キャンセル</button>
+      <button class="btn" id="f-save" onclick="saveCustomer('${id||''}')">保存する</button>
+    </div>
+  `);
+}
+async function saveCustomer(id){
+  const name = document.getElementById('f-name').value.trim();
+  if(!name){ toast('お名前を入力してください'); return; }
+  const data = {
+    id: id || uid(),
+    name, kana: document.getElementById('f-kana').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    birthday: document.getElementById('f-birthday').value,
+    allergy: document.getElementById('f-allergy').value.trim(),
+    note: document.getElementById('f-note').value.trim(),
+  };
+  const btn = document.getElementById('f-save');
+  btn.disabled = true; btn.textContent = '保存中…';
+  try{
+    if(!LOCAL_MODE) await api('saveCustomer', {customer: data});
+    if(id){
+      Object.assign(DB.customers.find(x=>x.id===id), data);
+    }else{
+      data.createdAt = new Date().toISOString();
+      data.records = [];
+      DB.customers.push(data);
+      view = {page:'detail', customerId:data.id, search:''};
+    }
+    await persistLocal();
+    closeSheet(); render(); toast('保存しました');
+  }catch(e){
+    btn.disabled = false; btn.textContent = '保存する';
+    if(!handleAuthErr(e)) toast(e.message);
+  }
+}
+async function deleteCustomer(id){
+  try{
+    if(!LOCAL_MODE) await api('deleteCustomer', {id});
+    DB.customers = DB.customers.filter(x=>x.id!==id);
+    view.page='list';
+    await persistLocal();
+    render(); toast('顧客を削除しました');
+  }catch(e){ if(!handleAuthErr(e)) toast(e.message); }
+}
+/* 削除ボタン2タップ確認 */
+function armed(btn){
+  if(btn.dataset.armed) return true;
+  btn.dataset.armed = '1';
+  btn.textContent = '本当に削除する？';
+  setTimeout(()=>{
+    if(btn.isConnected){ delete btn.dataset.armed; btn.textContent = btn.dataset.label; }
+  }, 3000);
+  return false;
+}
+
+/* ================= record form ================= */
+async function openRecordForm(customerId, recordId){
+  const c = DB.customers.find(x=>x.id===customerId);
+  const r = recordId ? c.records.find(x=>x.id===recordId) : null;
+  const today = new Date().toISOString().slice(0,10);
+  showSheet(`
+    <h3>${r?'カルテを編集':'新規カルテ'} — ${esc(c.name)} 様</h3>
+    <div class="field"><label>施術日 *</label><input id="r-date" type="date" value="${r?.date||today}"></div>
+    <div class="field"><label>メニュー *</label><input id="r-menu" value="${esc(r?.menu)}" placeholder="例）フラットラッシュ120本"></div>
+    <div class="field"><label>料金（税込・円）</label><input id="r-price" inputmode="numeric" value="${r?.price||''}"></div>
+
+    <div class="dept-section">
+      <span class="tag">デザイン詳細</span>
+      <div class="row3">
+        <div class="field"><label>カール</label>
+          <select id="r-curl">${['','J','C','CC','D','L'].map(v=>`<option ${r?.curl===v?'selected':''}>${v}</option>`).join('')}</select></div>
+        <div class="field"><label>太さ(mm)</label><input id="r-thickness" value="${esc(r?.thickness)}" placeholder="0.15"></div>
+        <div class="field"><label>長さ(mm)</label><input id="r-length" value="${esc(r?.length)}" placeholder="9-11"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>本数・デザイン</label><input id="r-count" value="${esc(r?.count)}" placeholder="120本 / フラット"></div>
+        <div class="field"><label>使用グルー</label><input id="r-glue" value="${esc(r?.glue)}"></div>
+      </div>
+      <div class="field"><label>パッチテスト</label>
+        <select id="r-patch">
+          <option value="">-</option>
+          <option value="done" ${r?.patch==='done'?'selected':''}>実施済み</option>
+          <option value="skip" ${r?.patch==='skip'?'selected':''}>未実施（同意取得）</option>
+        </select></div>
+    </div>
+
+    <div class="field" style="margin-top:14px"><label>手書きメモ（デザイン図・ラッシュマップなど）</label>
+      <div class="sketch-wrap">
+        <div class="sketch-stack">
+          <canvas id="r-guide" width="680" height="380"></canvas>
+          <canvas id="r-sketch" width="680" height="380"></canvas>
+        </div>
+        <div class="sketch-tools">
+          <button type="button" class="chip" id="pen-pen" onclick="setPen('pen')">ペン</button>
+          <button type="button" class="chip" id="pen-eraser" onclick="setPen('eraser')">消しゴム</button>
+          <button type="button" class="chip" onclick="clearSketch()">全消去</button>
+          <button type="button" class="chip" id="guide-btn" onclick="toggleGuide()">まつげ下絵</button>
+        </div>
+      </div>
+    </div>
+    <div class="field"><label>施術詳細・仕上がりメモ</label><textarea id="r-detail">${esc(r?.detail)}</textarea></div>
+    <div class="field"><label>次回提案（次回予約につながる一言）</label>
+      <input id="r-next" value="${esc(r?.next)}" placeholder="例）3週間後にリペア"></div>
+    <div class="field"><label>スタッフ間共有メモ</label><textarea id="r-memo">${esc(r?.memo)}</textarea></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" onclick="closeSheet()">キャンセル</button>
+      <button class="btn lash" id="r-save" onclick="saveRecord('${customerId}','${recordId||''}')">カルテを保存</button>
+    </div>
+  `);
+  /* 既存の手書きデータがあれば取得してからキャンバスに反映 */
+  let ink = r?.sketchInk || r?.sketch || (r?.sketchId ? sketchCache[r.sketchId] : '');
+  if(!ink && r?.sketchId){
+    try{
+      const j = await api('getSketch', {id: r.sketchId});
+      ink = 'data:image/png;base64,' + j.data;
+      sketchCache[r.sketchId] = ink;
+    }catch(e){ toast('手書きメモを読み込めませんでした'); }
+  }
+  initSketch(r, ink);
+}
+async function saveRecord(customerId, recordId){
+  const g = id => document.getElementById(id).value.trim();
+  if(!g('r-date')){ toast('施術日を入力してください'); return; }
+  if(!g('r-menu')){ toast('メニューを入力してください'); return; }
+  const data = {
+    id: recordId || uid(),
+    dept:'lash', date: g('r-date'), menu: g('r-menu'), price: g('r-price'),
+    curl: g('r-curl'), thickness: g('r-thickness'), length: g('r-length'),
+    count: g('r-count'), glue: g('r-glue'), patch: g('r-patch'),
+    detail: g('r-detail'), next: g('r-next'), memo: g('r-memo'),
+    staff: USER ? USER.name : '',
+    sketchGuide: false,
+  };
+  const hasInk = sk.dirty || sk.has;
+  let inkURL = '';
+  if(hasInk){
+    inkURL = sk.cv.toDataURL('image/png');
+    data.sketchGuide = sk.guideOn;
+  }
+  const btn = document.getElementById('r-save');
+  btn.disabled = true; btn.textContent = '保存中…';
+  try{
+    const c = DB.customers.find(x=>x.id===customerId);
+    const prev = recordId ? c.records.find(x=>x.id===recordId) : null;
+    if(LOCAL_MODE){
+      data.sketchInk = hasInk ? inkURL : '';
+    }else{
+      const j = await api('saveRecord', {
+        customerId,
+        record: data,
+        sketchInk: hasInk ? inkURL.split(',')[1] : '',
+        oldSketchId: prev?.sketchId || '',
+      });
+      data.sketchId = j.sketchId || '';
+      if(data.sketchId) sketchCache[data.sketchId] = hasInk ? inkURL : '';
+    }
+    if(prev){ Object.assign(prev, data, LOCAL_MODE?{}:{sketchInk:'',sketch:''}); }
+    else{ c.records.push(data); }
+    await persistLocal();
+    closeSheet(); render(); toast('カルテを保存しました');
+  }catch(e){
+    btn.disabled = false; btn.textContent = 'カルテを保存';
+    if(!handleAuthErr(e)) toast(e.message);
+  }
+}
+async function deleteRecord(customerId, recordId){
+  try{
+    const c = DB.customers.find(x=>x.id===customerId);
+    const r = c.records.find(x=>x.id===recordId);
+    if(!LOCAL_MODE) await api('deleteRecord', {customerId, id: recordId, sketchId: r?.sketchId || ''});
+    c.records = c.records.filter(x=>x.id!==recordId);
+    await persistLocal();
+    render(); toast('カルテを削除しました');
+  }catch(e){ if(!handleAuthErr(e)) toast(e.message); }
+}
+
+/* ================= sketch (手書き) ================= */
+let sk = {cv:null, ctx:null, drawing:false, mode:'pen', dirty:false, has:false, guideOn:false};
+function initSketch(r, ink){
+  const cv = document.getElementById('r-sketch');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  sk = {cv, ctx, drawing:false, mode:'pen', dirty:false, has:!!ink, guideOn:false};
+  if(ink){ const img = new Image(); img.onload = ()=>ctx.drawImage(img,0,0,cv.width,cv.height); img.src = ink; }
+  setPen('pen');
+  setGuide(r ? !!r.sketchGuide : true);
+  const pos = e => {
+    const rc = cv.getBoundingClientRect();
+    return { x:(e.clientX-rc.left)*cv.width/rc.width, y:(e.clientY-rc.top)*cv.height/rc.height };
+  };
+  const stroke = () => {
+    ctx.globalCompositeOperation = sk.mode==='pen' ? 'source-over' : 'destination-out';
+    ctx.strokeStyle = '#23211E';
+    ctx.lineWidth   = sk.mode==='pen' ? 2.5 : 20;
+    ctx.stroke();
+  };
+  cv.onpointerdown = e => {
+    e.preventDefault(); cv.setPointerCapture(e.pointerId);
+    sk.drawing = true; sk.dirty = true;
+    const p = pos(e);
+    ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+0.1,p.y+0.1); stroke();
+  };
+  cv.onpointermove = e => {
+    if(!sk.drawing) return;
+    e.preventDefault();
+    const p = pos(e); ctx.lineTo(p.x,p.y); stroke();
+  };
+  cv.onpointerup = cv.onpointercancel = () => { sk.drawing = false; };
+}
+function setPen(mode){
+  sk.mode = mode;
+  const p = document.getElementById('pen-pen'), e = document.getElementById('pen-eraser');
+  if(p) p.classList.toggle('active', mode==='pen');
+  if(e) e.classList.toggle('active', mode==='eraser');
+}
+function clearSketch(){
+  if(!sk.ctx) return;
+  sk.ctx.clearRect(0,0,sk.cv.width,sk.cv.height);
+  sk.dirty = false; sk.has = false;
+}
+function toggleGuide(){ setGuide(!sk.guideOn); }
+function setGuide(on){
+  sk.guideOn = on;
+  const gc = document.getElementById('r-guide');
+  if(!gc) return;
+  const g = gc.getContext('2d');
+  g.clearRect(0,0,gc.width,gc.height);
+  if(on) drawGuide(g, gc.width, gc.height);
+  const b = document.getElementById('guide-btn');
+  if(b) b.classList.toggle('active', on);
+}
+/* まつげ下絵：左右の目＋ラッシュライン5ゾーン */
+function drawGuide(ctx,w,h){
+  ctx.save();
+  ctx.strokeStyle = '#C9C2B6';
+  ctx.fillStyle   = '#A89F90';
+  ctx.lineWidth   = 1.5;
+  ctx.font = '13px "Zen Kaku Gothic New",sans-serif';
+  ctx.textAlign = 'center';
+  const qx = (t,x0,cx,x1)=> (1-t)*(1-t)*x0 + 2*(1-t)*t*cx + t*t*x1;
+  [[w*0.27,'右目'],[w*0.73,'左目']].forEach(([cx,label])=>{
+    const cy = h*0.52, ew = w*0.36, eh = h*0.36;
+    const x0 = cx-ew/2, x1 = cx+ew/2;
+    ctx.beginPath(); ctx.moveTo(x0,cy);
+    ctx.quadraticCurveTo(cx, cy-eh, x1, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0,cy);
+    ctx.quadraticCurveTo(cx, cy+eh*0.5, x1, cy); ctx.stroke();
+    for(let i=0;i<=5;i++){
+      const t = i/5;
+      const px = qx(t,x0,cx,x1);
+      const py = qx(t,cy,cy-eh,cy);
+      ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py-14); ctx.stroke();
+      if(i<5){
+        const tm = (i+0.5)/5;
+        ctx.fillText(String(i+1), qx(tm,x0,cx,x1), qx(tm,cy,cy-eh,cy)-22);
+      }
+    }
+    ctx.fillText(label, cx, cy+eh*0.5+26);
+  });
+  ctx.restore();
+}
+
+/* ================= ui helpers ================= */
+function openDetail(id){ view.page='detail'; view.customerId=id; render(); window.scrollTo(0,0); }
+function showSheet(html){
+  document.getElementById('sheet').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeSheet(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeSheet(); });
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+init();
+</script>
+</body>
+</html>
