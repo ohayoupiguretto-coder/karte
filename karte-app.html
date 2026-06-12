@@ -665,7 +665,14 @@ async function openRecordForm(customerId, recordId){
   showSheet(`
     <h3>${r?'カルテを編集':'新規カルテ'} — ${esc(c.name)} 様</h3>
     <div class="field"><label>施術日 *</label><input id="r-date" type="date" value="${r?.date||today}"></div>
-    <div class="field"><label>メニュー *</label><input id="r-menu" value="${esc(r?.menu)}"></div>
+    <div class="field"><label>メニュー *</label>
+      <select id="r-menu" onchange="onMenuChange()">
+        <option value="">選択してください</option>
+        <option ${r?.menu==='まつげパーマ'?'selected':''}>まつげパーマ</option><option ${r?.menu==='パリジェンヌ'?'selected':''}>パリジェンヌ</option><option ${r?.menu==='美眉スタイリング'?'selected':''}>美眉スタイリング</option><option ${r?.menu==='上下まつ毛パーマ'?'selected':''}>上下まつ毛パーマ</option><option ${r?.menu==='まつぱ&美眉'?'selected':''}>まつぱ&美眉</option><option ${r?.menu==='上下まつぱ&美眉'?'selected':''}>上下まつぱ&美眉</option><option ${r?.menu==='ハリウッドブロウリフト'?'selected':''}>ハリウッドブロウリフト</option>
+        <option value="__other__">その他（自由入力）</option>
+      </select>
+      <input id="r-menu-other" style="margin-top:8px;display:none" placeholder="メニュー名を入力" value="">
+    </div>
     <div class="field"><label>料金（税込・円）</label><input id="r-price" inputmode="numeric" value="${r?.price||''}"></div>
 
     <div class="dept-section">
@@ -711,6 +718,8 @@ async function openRecordForm(customerId, recordId){
       <button class="btn lash" id="r-save" onclick="saveRecord('${customerId}','${recordId||''}')">カルテを保存</button>
     </div>
   `);
+  /* メニューのプルダウン初期化（リスト外の値は「その他」に） */
+  initMenu(r?.menu);
   /* 既存の手書きデータがあれば取得してからキャンバスに反映 */
   let ink = r?.sketchInk || r?.sketch || (r?.sketchId ? sketchCache[r.sketchId] : '');
   if(!ink && r?.sketchId){
@@ -722,13 +731,39 @@ async function openRecordForm(customerId, recordId){
   }
   initSketch(r, ink);
 }
+const MENU_LIST = ['まつげパーマ','パリジェンヌ','美眉スタイリング','上下まつ毛パーマ','まつぱ&美眉','上下まつぱ&美眉','ハリウッドブロウリフト'];
+function initMenu(menu){
+  const sel = document.getElementById('r-menu');
+  const other = document.getElementById('r-menu-other');
+  if(!sel) return;
+  if(menu && MENU_LIST.indexOf(menu) === -1){
+    sel.value = '__other__';
+    other.style.display = 'block';
+    other.value = menu;
+  }else{
+    sel.value = menu || '';
+    other.style.display = 'none';
+  }
+}
+function onMenuChange(){
+  const sel = document.getElementById('r-menu');
+  const other = document.getElementById('r-menu-other');
+  if(sel.value === '__other__'){ other.style.display = 'block'; other.focus(); }
+  else{ other.style.display = 'none'; }
+}
+function getMenuValue(){
+  const sel = document.getElementById('r-menu');
+  if(sel.value === '__other__') return document.getElementById('r-menu-other').value.trim();
+  return sel.value;
+}
 async function saveRecord(customerId, recordId){
   const g = id => document.getElementById(id).value.trim();
   if(!g('r-date')){ toast('施術日を入力してください'); return; }
-  if(!g('r-menu')){ toast('メニューを入力してください'); return; }
+  const menuVal = getMenuValue();
+  if(!menuVal){ toast('メニューを選択してください'); return; }
   const data = {
     id: recordId || uid(),
-    dept:'lash', date: g('r-date'), menu: g('r-menu'), price: g('r-price'),
+    dept:'lash', date: g('r-date'), menu: menuVal, price: g('r-price'),
     curl: g('r-curl'), thickness: g('r-thickness'), length: g('r-length'),
     count: g('r-count'), glue: g('r-glue'), patch: g('r-patch'),
     detail: g('r-detail'), next: g('r-next'), memo: g('r-memo'),
