@@ -535,9 +535,10 @@ function renderDetail(){
   `;
 }
 
-function fmtCurl(cv){
-  if(!cv) return '';
-  const s = String(cv);
+function joinZones(a,b,c){ return (a||b||c) ? [a,b,c].join('/') : ''; }
+function fmtZones(raw){
+  if(!raw) return '';
+  const s = String(raw);
   if(s.indexOf('/') === -1) return s;
   const p = s.split('/');
   if(!p.some(Boolean)) return '';
@@ -546,8 +547,8 @@ function fmtCurl(cv){
   return p.map((v,i)=>v ? names[i]+':'+v : '').filter(Boolean).join(' ');
 }
 function renderRecord(c,r){
-  const curlDisp = fmtCurl(r.curl);
-  const spec = [curlDisp&&`カール ${curlDisp}`, r.thickness&&`太さ:${r.thickness}`, r.length&&`長さ:${r.length}`, r.count&&`本数:${r.count}`].filter(Boolean).join(' ／ ');
+  const curlDisp = fmtZones(r.curl), thDisp = fmtZones(r.thickness), lenDisp = fmtZones(r.length);
+  const spec = [curlDisp&&`カール ${curlDisp}`, thDisp&&`太さ ${thDisp}`, lenDisp&&`長さ ${lenDisp}`, r.count&&`本数:${r.count}`].filter(Boolean).join(' ／ ');
   const hasSketch = !!(r.sketchId || r.sketchInk || r.sketch);
   return `<div class="record" id="rec-${r.id}">
     <div class="head" onclick="toggleRecord('${c.id}','${r.id}')">
@@ -691,10 +692,14 @@ async function openRecordForm(customerId, recordId){
   const c = DB.customers.find(x=>x.id===customerId);
   const r = recordId ? c.records.find(x=>x.id===recordId) : null;
   const today = new Date().toISOString().slice(0,10);
-  /* カール: "目頭/中央/目尻" 形式。旧データ(単一値)は3箇所同じ扱い */
-  const cvRaw = String(r?.curl || '');
-  const curls = cvRaw.indexOf('/') !== -1 ? cvRaw.split('/') : (cvRaw ? [cvRaw,cvRaw,cvRaw] : ['','','']);
-  while(curls.length < 3) curls.push('');
+  /* カール・太さ・長さ: "目頭/中央/目尻" 形式。旧データ(単一値)は3箇所同じ扱い */
+  const zone3 = raw => {
+    const s = String(raw || '');
+    const a = s.indexOf('/') !== -1 ? s.split('/') : (s ? [s,s,s] : ['','','']);
+    while(a.length < 3) a.push('');
+    return a;
+  };
+  const curls = zone3(r?.curl), ths = zone3(r?.thickness), lens = zone3(r?.length);
   const curlOpts = sel => ['','J','C','CC','D','L'].map(v=>`<option ${sel===v?'selected':''}>${v}</option>`).join('');
   showSheet(`
     <h3>${r?'カルテを編集':'新規カルテ'} — ${esc(c.name)} 様</h3>
@@ -714,9 +719,19 @@ async function openRecordForm(customerId, recordId){
           <div><label>目尻</label><select id="r-curl3">${curlOpts(curls[2])}</select></div>
         </div>
       </div>
-      <div class="row2">
-        <div class="field"><label>太さ(mm)</label><input id="r-thickness" value="${esc(r?.thickness)}"></div>
-        <div class="field"><label>長さ(mm)</label><input id="r-length" value="${esc(r?.length)}"></div>
+      <div class="field"><label>太さ(mm)</label>
+        <div class="row3">
+          <div><label>目頭</label><input id="r-th1" inputmode="decimal" value="${esc(ths[0])}"></div>
+          <div><label>中央</label><input id="r-th2" inputmode="decimal" value="${esc(ths[1])}"></div>
+          <div><label>目尻</label><input id="r-th3" inputmode="decimal" value="${esc(ths[2])}"></div>
+        </div>
+      </div>
+      <div class="field"><label>長さ(mm)</label>
+        <div class="row3">
+          <div><label>目頭</label><input id="r-len1" inputmode="decimal" value="${esc(lens[0])}"></div>
+          <div><label>中央</label><input id="r-len2" inputmode="decimal" value="${esc(lens[1])}"></div>
+          <div><label>目尻</label><input id="r-len3" inputmode="decimal" value="${esc(lens[2])}"></div>
+        </div>
       </div>
       <div class="row2">
         <div class="field"><label>本数・デザイン</label><input id="r-count" value="${esc(r?.count)}"></div>
@@ -806,8 +821,9 @@ async function saveRecord(customerId, recordId){
   const data = {
     id: recordId || uid(),
     dept:'lash', date: g('r-date'), menu: menuVal, price: g('r-price'),
-    curl: (g('r-curl1')||g('r-curl2')||g('r-curl3')) ? [g('r-curl1'),g('r-curl2'),g('r-curl3')].join('/') : '',
-    thickness: g('r-thickness'), length: g('r-length'),
+    curl: joinZones(g('r-curl1'), g('r-curl2'), g('r-curl3')),
+    thickness: joinZones(g('r-th1'), g('r-th2'), g('r-th3')),
+    length: joinZones(g('r-len1'), g('r-len2'), g('r-len3')),
     count: g('r-count'), glue: g('r-glue'), patch: g('r-patch'),
     detail: g('r-detail'), next: g('r-next'), memo: g('r-memo'),
     staff: USER ? USER.name : '',
