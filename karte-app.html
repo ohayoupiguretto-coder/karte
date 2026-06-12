@@ -700,7 +700,7 @@ async function openRecordForm(customerId, recordId){
     return a;
   };
   const curls = zone3(r?.curl), ths = zone3(r?.thickness), lens = zone3(r?.length);
-  const curlOpts = sel => ['','J','C','CC','D','L'].map(v=>`<option ${sel===v?'selected':''}>${v}</option>`).join('');
+  const curlOpts = sel => ['','J','C','D','L','LC','LD'].map(v=>`<option ${sel===v?'selected':''}>${v}</option>`).join('');
   showSheet(`
     <h3>${r?'カルテを編集':'新規カルテ'} — ${esc(c.name)} 様</h3>
     <div class="field"><label>施術日 *</label><input id="r-date" type="date" value="${r?.date||today}"></div>
