@@ -535,8 +535,19 @@ function renderDetail(){
   `;
 }
 
+function fmtCurl(cv){
+  if(!cv) return '';
+  const s = String(cv);
+  if(s.indexOf('/') === -1) return s;
+  const p = s.split('/');
+  if(!p.some(Boolean)) return '';
+  if(p[0] && p[0]===p[1] && p[1]===p[2]) return p[0];
+  const names = ['目頭','中央','目尻'];
+  return p.map((v,i)=>v ? names[i]+':'+v : '').filter(Boolean).join(' ');
+}
 function renderRecord(c,r){
-  const spec = [r.curl&&`カール:${r.curl}`, r.thickness&&`太さ:${r.thickness}`, r.length&&`長さ:${r.length}`, r.count&&`本数:${r.count}`].filter(Boolean).join(' ／ ');
+  const curlDisp = fmtCurl(r.curl);
+  const spec = [curlDisp&&`カール ${curlDisp}`, r.thickness&&`太さ:${r.thickness}`, r.length&&`長さ:${r.length}`, r.count&&`本数:${r.count}`].filter(Boolean).join(' ／ ');
   const hasSketch = !!(r.sketchId || r.sketchInk || r.sketch);
   return `<div class="record" id="rec-${r.id}">
     <div class="head" onclick="toggleRecord('${c.id}','${r.id}')">
@@ -680,6 +691,11 @@ async function openRecordForm(customerId, recordId){
   const c = DB.customers.find(x=>x.id===customerId);
   const r = recordId ? c.records.find(x=>x.id===recordId) : null;
   const today = new Date().toISOString().slice(0,10);
+  /* カール: "目頭/中央/目尻" 形式。旧データ(単一値)は3箇所同じ扱い */
+  const cvRaw = String(r?.curl || '');
+  const curls = cvRaw.indexOf('/') !== -1 ? cvRaw.split('/') : (cvRaw ? [cvRaw,cvRaw,cvRaw] : ['','','']);
+  while(curls.length < 3) curls.push('');
+  const curlOpts = sel => ['','J','C','CC','D','L'].map(v=>`<option ${sel===v?'selected':''}>${v}</option>`).join('');
   showSheet(`
     <h3>${r?'カルテを編集':'新規カルテ'} — ${esc(c.name)} 様</h3>
     <div class="field"><label>施術日 *</label><input id="r-date" type="date" value="${r?.date||today}"></div>
@@ -691,9 +707,14 @@ async function openRecordForm(customerId, recordId){
 
     <div class="dept-section">
       <span class="tag">デザイン詳細</span>
-      <div class="row3">
-        <div class="field"><label>カール</label>
-          <select id="r-curl">${['','J','C','CC','D','L'].map(v=>`<option ${r?.curl===v?'selected':''}>${v}</option>`).join('')}</select></div>
+      <div class="field"><label>カール</label>
+        <div class="row3">
+          <div><label>目頭</label><select id="r-curl1">${curlOpts(curls[0])}</select></div>
+          <div><label>中央</label><select id="r-curl2">${curlOpts(curls[1])}</select></div>
+          <div><label>目尻</label><select id="r-curl3">${curlOpts(curls[2])}</select></div>
+        </div>
+      </div>
+      <div class="row2">
         <div class="field"><label>太さ(mm)</label><input id="r-thickness" value="${esc(r?.thickness)}"></div>
         <div class="field"><label>長さ(mm)</label><input id="r-length" value="${esc(r?.length)}"></div>
       </div>
@@ -745,7 +766,7 @@ async function openRecordForm(customerId, recordId){
   }
   initSketch(r, ink);
 }
-const MENU_LIST = ['まつげパーマ','パリジェンヌ','美眉スタイリング','上下まつ毛パーマ','まつぱ&美眉','上下まつぱ&美眉','ハリウッドブロウリフト'];
+const MENU_LIST = ['まつげパーマ','パリジェンヌ','美眉スタイリング','上下まつ毛パーマ','まつぱ&美眉','上下まつぱ&美眉','ハリウッドブロウリフト','フラットラッシュ','LEDエクステ','アンドヘルシー','指名料'];
 function initMenu(menu){
   /* 保存値はカンマ区切り。リスト外のものは「その他」に入れる */
   const selected = (menu ? String(menu).split(',').map(s=>s.trim()).filter(Boolean) : []);
@@ -785,7 +806,8 @@ async function saveRecord(customerId, recordId){
   const data = {
     id: recordId || uid(),
     dept:'lash', date: g('r-date'), menu: menuVal, price: g('r-price'),
-    curl: g('r-curl'), thickness: g('r-thickness'), length: g('r-length'),
+    curl: (g('r-curl1')||g('r-curl2')||g('r-curl3')) ? [g('r-curl1'),g('r-curl2'),g('r-curl3')].join('/') : '',
+    thickness: g('r-thickness'), length: g('r-length'),
     count: g('r-count'), glue: g('r-glue'), patch: g('r-patch'),
     detail: g('r-detail'), next: g('r-next'), memo: g('r-memo'),
     staff: USER ? USER.name : '',
@@ -891,33 +913,38 @@ function setGuide(on){
   const b = document.getElementById('guide-btn');
   if(b) b.classList.toggle('active', on);
 }
-/* まつげ下絵：左右の目＋ラッシュライン5ゾーン */
+/* まつげ下絵：閉じ目のまぶたライン＋放射状のまつげ（紙のカルテと同じ形） */
 function drawGuide(ctx,w,h){
   ctx.save();
   ctx.strokeStyle = '#C9C2B6';
-  ctx.fillStyle   = '#A89F90';
-  ctx.lineWidth   = 1.5;
-  ctx.font = '13px "Zen Kaku Gothic New",sans-serif';
-  ctx.textAlign = 'center';
-  const qx = (t,x0,cx,x1)=> (1-t)*(1-t)*x0 + 2*(1-t)*t*cx + t*t*x1;
-  [[w*0.27,'右目'],[w*0.73,'左目']].forEach(([cx,label])=>{
-    const cy = h*0.52, ew = w*0.36, eh = h*0.36;
-    const x0 = cx-ew/2, x1 = cx+ew/2;
-    ctx.beginPath(); ctx.moveTo(x0,cy);
-    ctx.quadraticCurveTo(cx, cy-eh, x1, cy); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x0,cy);
-    ctx.quadraticCurveTo(cx, cy+eh*0.5, x1, cy); ctx.stroke();
-    for(let i=0;i<=5;i++){
-      const t = i/5;
-      const px = qx(t,x0,cx,x1);
-      const py = qx(t,cy,cy-eh,cy);
-      ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py-14); ctx.stroke();
-      if(i<5){
-        const tm = (i+0.5)/5;
-        ctx.fillText(String(i+1), qx(tm,x0,cx,x1), qx(tm,cy,cy-eh,cy)-22);
-      }
+  ctx.lineWidth   = 2;
+  ctx.lineCap     = 'round';
+  const q  = (t,a,c,b)=> (1-t)*(1-t)*a + 2*(1-t)*t*c + t*t*b;   /* ベジェ上の点 */
+  const dq = (t,a,c,b)=> 2*(1-t)*(c-a) + 2*t*(b-c);              /* 接線(微分) */
+  [w*0.27, w*0.73].forEach(cx=>{
+    const cy = h*0.62, ew = w*0.34, eh = h*0.30;
+    const x0 = cx-ew/2, x1 = cx+ew/2, cyc = cy-eh;
+    /* まぶたのライン（上向きのアーチ） */
+    ctx.beginPath();
+    ctx.moveTo(x0, cy);
+    ctx.quadraticCurveTo(cx, cyc, x1, cy);
+    ctx.stroke();
+    /* まつげ：カーブに沿って放射状に6本 */
+    const n = 6, len = h*0.13;
+    for(let i=0;i<n;i++){
+      const t  = 0.08 + (0.84*i)/(n-1);
+      const px = q(t, x0, cx, x1);
+      const py = q(t, cy, cyc, cy);
+      const tx = dq(t, x0, cx, x1);
+      const ty = dq(t, cy, cyc, cy);
+      const m  = Math.hypot(tx,ty) || 1;
+      let nx = ty/m, ny = -tx/m;          /* 法線方向 */
+      if(ny > 0){ nx = -nx; ny = -ny; }   /* 必ず上向きに */
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + nx*len, py + ny*len);
+      ctx.stroke();
     }
-    ctx.fillText(label, cx, cy+eh*0.5+26);
   });
   ctx.restore();
 }
