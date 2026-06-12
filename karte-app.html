@@ -161,6 +161,14 @@ main{max-width:780px;margin:0 auto;padding:16px 16px 90px}
   background:var(--lash-soft);color:var(--lash);
 }
 
+/* ===== menu multi-select ===== */
+.menu-box{display:flex;flex-wrap:wrap;gap:8px}
+.menu-chip{
+  padding:8px 14px;border-radius:999px;border:1px solid var(--line);
+  background:#fff;font-size:13px;font-weight:500;color:var(--ink);
+}
+.menu-chip.on{background:var(--lash);color:#fff;border-color:var(--lash)}
+
 /* ===== sketch ===== */
 .sketch-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
 .sketch-stack{position:relative;background:#fff}
@@ -665,13 +673,9 @@ async function openRecordForm(customerId, recordId){
   showSheet(`
     <h3>${r?'カルテを編集':'新規カルテ'} — ${esc(c.name)} 様</h3>
     <div class="field"><label>施術日 *</label><input id="r-date" type="date" value="${r?.date||today}"></div>
-    <div class="field"><label>メニュー *</label>
-      <select id="r-menu" onchange="onMenuChange()">
-        <option value="">選択してください</option>
-        <option ${r?.menu==='まつげパーマ'?'selected':''}>まつげパーマ</option><option ${r?.menu==='パリジェンヌ'?'selected':''}>パリジェンヌ</option><option ${r?.menu==='美眉スタイリング'?'selected':''}>美眉スタイリング</option><option ${r?.menu==='上下まつ毛パーマ'?'selected':''}>上下まつ毛パーマ</option><option ${r?.menu==='まつぱ&美眉'?'selected':''}>まつぱ&美眉</option><option ${r?.menu==='上下まつぱ&美眉'?'selected':''}>上下まつぱ&美眉</option><option ${r?.menu==='ハリウッドブロウリフト'?'selected':''}>ハリウッドブロウリフト</option>
-        <option value="__other__">その他（自由入力）</option>
-      </select>
-      <input id="r-menu-other" style="margin-top:8px;display:none" placeholder="メニュー名を入力" value="">
+    <div class="field"><label>メニュー *（複数選択可）</label>
+      <div id="menu-box" class="menu-box"></div>
+      <input id="r-menu-other" style="margin-top:8px;display:none" placeholder="その他のメニュー名を入力">
     </div>
     <div class="field"><label>料金（税込・円）</label><input id="r-price" inputmode="numeric" value="${r?.price||''}"></div>
 
@@ -733,28 +737,35 @@ async function openRecordForm(customerId, recordId){
 }
 const MENU_LIST = ['まつげパーマ','パリジェンヌ','美眉スタイリング','上下まつ毛パーマ','まつぱ&美眉','上下まつぱ&美眉','ハリウッドブロウリフト'];
 function initMenu(menu){
-  const sel = document.getElementById('r-menu');
+  /* 保存値はカンマ区切り。リスト外のものは「その他」に入れる */
+  const selected = (menu ? String(menu).split(',').map(s=>s.trim()).filter(Boolean) : []);
+  const box = document.getElementById('menu-box');
   const other = document.getElementById('r-menu-other');
-  if(!sel) return;
-  if(menu && MENU_LIST.indexOf(menu) === -1){
-    sel.value = '__other__';
-    other.style.display = 'block';
-    other.value = menu;
-  }else{
-    sel.value = menu || '';
-    other.style.display = 'none';
-  }
+  const otherVals = selected.filter(m => MENU_LIST.indexOf(m) === -1);
+  box.innerHTML = MENU_LIST.map(m=>{
+    const on = selected.indexOf(m) !== -1;
+    return `<button type="button" class="menu-chip${on?' on':''}" onclick="this.classList.toggle('on')">${m}</button>`;
+  }).join('') +
+  `<button type="button" class="menu-chip${otherVals.length?' on':''}" id="menu-other-chip" onclick="toggleOther(this)">その他</button>`;
+  if(otherVals.length){ other.style.display = 'block'; other.value = otherVals.join(', '); }
+  else{ other.style.display = 'none'; other.value = ''; }
 }
-function onMenuChange(){
-  const sel = document.getElementById('r-menu');
+function toggleOther(btn){
+  btn.classList.toggle('on');
   const other = document.getElementById('r-menu-other');
-  if(sel.value === '__other__'){ other.style.display = 'block'; other.focus(); }
+  if(btn.classList.contains('on')){ other.style.display = 'block'; other.focus(); }
   else{ other.style.display = 'none'; }
 }
 function getMenuValue(){
-  const sel = document.getElementById('r-menu');
-  if(sel.value === '__other__') return document.getElementById('r-menu-other').value.trim();
-  return sel.value;
+  const chosen = Array.from(document.querySelectorAll('#menu-box .menu-chip.on'))
+    .filter(b => b.id !== 'menu-other-chip')
+    .map(b => b.textContent);
+  const otherChip = document.getElementById('menu-other-chip');
+  if(otherChip && otherChip.classList.contains('on')){
+    const ov = document.getElementById('r-menu-other').value.trim();
+    ov.split(',').map(s=>s.trim()).filter(Boolean).forEach(v=>chosen.push(v));
+  }
+  return chosen.join(', ');
 }
 async function saveRecord(customerId, recordId){
   const g = id => document.getElementById(id).value.trim();
