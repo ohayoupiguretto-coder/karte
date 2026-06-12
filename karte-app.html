@@ -437,7 +437,8 @@ function renderAdminPanel(users){
       u.status==='pending'  ? `<button class="btn lash sm" onclick="setUserStatus('${u.id}','approved')">承認</button>
                                <button class="btn danger sm" onclick="setUserStatus('${u.id}','revoked')">却下</button>` :
       u.status==='approved' ? `<button class="btn danger sm" onclick="setUserStatus('${u.id}','revoked')">停止</button>` :
-                              `<button class="btn ghost sm" onclick="setUserStatus('${u.id}','approved')">再開</button>`;
+                              `<button class="btn ghost sm" onclick="setUserStatus('${u.id}','approved')">再開</button>
+                               <button class="btn danger sm" data-label="削除" onclick="if(armed(this))deleteUser('${u.id}')">削除</button>`;
     return `<div class="user-row">
       <span class="uname">${esc(u.name)}</span>
       <span class="status-badge ${u.status}">${label[u.status]||u.status}</span>
@@ -446,8 +447,17 @@ function renderAdminPanel(users){
   }).join('');
   showSheet(`<h3>スタッフ管理</h3>
     ${rows || '<p style="color:var(--sub);font-size:13px">申請はまだありません。</p>'}
-    <p style="font-size:11px;color:var(--sub);margin-top:14px">「停止」にすると、そのスタッフは即時ログアウトされ、再開するまでアクセスできません。</p>
+    <p style="font-size:11px;color:var(--sub);margin-top:14px">「停止」にすると、そのスタッフは即時ログアウトされ、再開するまでアクセスできません。停止中のスタッフは「削除」で一覧から完全に消せます（書いたカルテの記録者名は残ります）。</p>
     <div class="sheet-actions"><button class="btn ghost" onclick="closeSheet()">閉じる</button></div>`);
+}
+async function deleteUser(id){
+  try{
+    await api('deleteUser', {id});
+    toast('スタッフを削除しました');
+    openAdminPanel();
+  }catch(e){
+    if(!handleAuthErr(e)) toast(e.message);
+  }
 }
 async function setUserStatus(id, status){
   try{
